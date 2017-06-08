@@ -22,10 +22,11 @@ const WIDTH = window.innerWidth,
       UNITSIZE = 250, // size of a player, AI and wall cubes
       AINUM = 5,
       BULLET_SPEED = 1000.0,
-      SHOOT_MIN_INTERVAL = 500; // minimum time interval between two shots, in milliseconds
+      SHOOT_MIN_INTERVAL = 500, // minimum time interval between two shots, in milliseconds
+      EXPLOSION_TIME = 100; // explosion time in milliseconds
 
 // global Three.js-related variables
-var scene, camera, renderer, controls, clock, bullets = [], lastShot;
+var scene, camera, renderer, controls, clock, bullets = [], lastShot, explosions = [];
 
 onDocumentReady(function() {
     initGame();
@@ -150,6 +151,23 @@ function render() {
         if (checkCollision(bullet.position)) {
             bullets.splice(i, 1);
             scene.remove(bullet);
+            const explosion = new Explosion(bullet.position);
+            explosions.push(explosion);
+            scene.add(explosion.particles);
+        }
+    }
+
+    const now = new Date().getTime();
+    for (var i = explosions.length - 1; i >= 0; i--) {
+        const explosion = explosions[i];
+        if (now - explosion.firedAt >= EXPLOSION_TIME) {
+            // remove explosion if enough time has passed
+            explosions.splice(i, 1);
+            scene.remove(explosion.particles);
+            explosion.clearParticles();
+        } else {
+            // otherwise continue explosion
+            explosions[i].update();
         }
     }
 
@@ -244,5 +262,47 @@ function shoot(e) {
             spawnBullet();
             lastShot = now;
         }
+    }
+}
+
+function Explosion(position) {
+    this.dirs = [];
+
+    const totalObjects = 10000;
+    const particleSpeed = 80;
+
+    const geometry = new THREE.Geometry();
+
+    for (i = 0; i < totalObjects; i ++) {
+        const vertex = new THREE.Vector3();
+        vertex.x = position.x;
+        vertex.y = position.y;
+        vertex.z = position.z;
+
+        geometry.vertices.push(vertex);
+        this.dirs.push({
+            x: (Math.random() * particleSpeed) - (particleSpeed / 2),
+            y: (Math.random() * particleSpeed) - (particleSpeed / 2),
+            z: (Math.random() * particleSpeed) - (particleSpeed / 2)
+        });
+    }
+    const material = new THREE.PointsMaterial({color: 0xEC9B00});
+    this.particles = new THREE.Points(geometry, material);
+
+    this.firedAt = new Date().getTime();
+
+    this.update = function() {
+        var pCount = totalObjects;
+        while (pCount--) {
+            const particle =  this.particles.geometry.vertices[pCount]
+            particle.y += this.dirs[pCount].y;
+            particle.x += this.dirs[pCount].x;
+            particle.z += this.dirs[pCount].z;
+        }
+        this.particles.geometry.verticesNeedUpdate = true;
+    }
+
+    this.clearParticles = function() {
+        this.particles.geometry.dispose();
     }
 }
