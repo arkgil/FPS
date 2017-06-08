@@ -19,7 +19,8 @@ const mapW = map.length,
 // width and height of a window
 const WIDTH = window.innerWidth,
     HEIGHT = window.innerHeight,
-    UNITSIZE = 250; // size of a player, AI and wall cubes
+    UNITSIZE = 250, // size of a player, AI and wall cubes
+    AINUM = 5;
 
 // global Three.js-related variables
 var scene, camera, renderer, controls, clock;
@@ -47,6 +48,7 @@ function initGame() {
 
     // initialize world objects
     initWorld();
+    setupAI();
 
     // set up renderer
     renderer = new THREE.WebGLRenderer();
@@ -177,4 +179,37 @@ function spawnBullet(source) {
     bullet.owner = source;
 
     scene.add(bullet);
+}
+
+var ai = [];
+var aiGeo = new THREE.SphereGeometry(40, 40, 40);
+function setupAI() {
+    for (var i = 0; i < AINUM; i++) {
+        addAI();
+    }
+}
+
+function addAI() {
+    var c = getMapSector(camera.position);
+    var aiMaterial = new THREE.MeshBasicMaterial({map: THREE.ImageUtils.loadTexture('textures/eye.png')});
+    var o = new THREE.Mesh(aiGeo, aiMaterial);
+    do {
+        var x = getRandBetween(0, mapW-1);
+        var z = getRandBetween(0, mapH-1);
+    } while (map[x][z] > 0 || (x == c.x && z == c.z));
+    x = Math.floor(x)  * UNITSIZE;
+    z = Math.floor(z)  * UNITSIZE;
+    o.position.set(x, UNITSIZE * 0.15, z);
+    o.health = 100;
+    //o.path = getAIpath(o);
+    o.pathPos = 1;
+    o.lastRandomX = Math.random();
+    o.lastRandomZ = Math.random();
+    o.lastShot = Date.now(); // Higher-fidelity timers aren't a big deal here.
+    ai.push(o);
+    scene.add(o);
+}
+
+function getRandBetween(lo, hi) {
+    return parseInt(Math.floor(Math.random()*(hi-lo+1))+lo, 10);
 }
