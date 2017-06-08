@@ -75,7 +75,6 @@ KeyboardControls = function(camera, checkCollision) {
             if (this.moveBackward) {
                 newPosition.sub(direction);
             }
-            console.log(newPosition);
             if(!this.checkCollision(newPosition)) this.camera.position.copy(newPosition);
         }
     }
