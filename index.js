@@ -22,7 +22,7 @@ const WIDTH = window.innerWidth,
       UNITSIZE = 250; // size of a player, AI and wall cubes
 
 // global Three.js-related variables
-var scene, camera, renderer;
+var scene, camera, renderer, controls, clock;
 
 onDocumentReady(function() {
     initGame();
@@ -30,14 +30,22 @@ onDocumentReady(function() {
 })
 
 function initGame() {
+    // game clock
+    clock = new THREE.Clock();
+
     // set up scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
 
     // field of view, aspect, near plane, far plane
-    camera = new THREE.PerspectiveCamera(75, WIDTH / HEIGHT, 0.1, 2000);
-    camera.position.z = 500;
+    camera = new THREE.PerspectiveCamera(75, WIDTH / HEIGHT, 0.1, 10000);
     camera.position.y = UNITSIZE * 0.2;
+    camera.position.x = 2 * UNITSIZE;
+    camera.position.z = 2 * UNITSIZE;
+    scene.add(camera);
+
+    // intialize camera controls
+    controls = new KeyboardControls(camera);
 
     // initialize world objects
     initWorld();
@@ -99,5 +107,7 @@ function animate() {
 
 // render the scene
 function render() {
+    const timeDelta = clock.getDelta();
+    controls.update(timeDelta);
     renderer.render(scene, camera);
 }
