@@ -17,13 +17,14 @@ const mapW = map.length,
     mapH = map[0].length;
 
 // width and height of a window
-const WIDTH = window.innerWidth,
-      HEIGHT = window.innerHeight,
-      UNITSIZE = 250, // size of a player, AI and wall cubes
+WIDTH = window.innerWidth,
+      HEIGHT = window.innerHeight;
+const UNITSIZE = 250, // size of a player, AI and wall cubes
       AINUM = 5,
       BULLET_SPEED = 1000.0,
       SHOOT_MIN_INTERVAL = 500, // minimum time interval between two shots, in milliseconds
-      EXPLOSION_TIME = 100; // explosion time in milliseconds
+      EXPLOSION_TIME = 100, // explosion time in milliseconds
+      AISPEED = 2;
 
 // global Three.js-related variables
 var scene, camera, renderer, controls, clock, bullets = [], lastShot, explosions = [];
@@ -130,9 +131,10 @@ function initWorld() {
 
     console.log('Initialized world');
 }
-
 function animate() {
+    moveAI();
     requestAnimationFrame(animate);
+
     render();
 }
 
@@ -223,9 +225,12 @@ function spawnBullet(source) {
 }
 
 var ai = [];
+var aiDirx = [];
+var aiDirz = [];
 var aiGeo = new THREE.SphereGeometry(40, 40, 40);
 function setupAI() {
     for (var i = 0; i < AINUM; i++) {
+        aiDirx[i] = aiDirz[i] = AISPEED;
         addAI();
     }
 }
@@ -242,13 +247,25 @@ function addAI() {
     z = Math.floor(z)  * UNITSIZE;
     o.position.set(x, UNITSIZE * 0.15, z);
     o.health = 100;
-    //o.path = getAIpath(o);
     o.pathPos = 1;
     o.lastRandomX = Math.random();
     o.lastRandomZ = Math.random();
     o.lastShot = Date.now(); // Higher-fidelity timers aren't a big deal here.
     ai.push(o);
     scene.add(o);
+}
+
+function moveAI() {
+    for (i = 0; i < AINUM; i++) {
+        var direction = new THREE.Vector3(aiDirx[i], 0, aiDirz[i]);
+        ai[i].position.add(direction);
+        var delta = 1 + getRandBetween(0, 0.2);
+        if(checkCollision(ai[i].position))
+        {
+            aiDirx[i] = -aiDirx[i];
+            aiDirz[i] = -aiDirz[i];
+        }
+    }
 }
 
 function getRandBetween(lo, hi) {
@@ -264,6 +281,21 @@ function shoot(e) {
         }
     }
 }
+
+// Handle window resizing
+$(window).resize(function() {
+    WIDTH = window.innerWidth;
+    HEIGHT = window.innerHeight;
+    ASPECT = WIDTH / HEIGHT;
+    if (camera) {
+        camera.aspect = ASPECT;
+        camera.updateProjectionMatrix();
+    }
+    if (renderer) {
+        renderer.setSize(WIDTH, HEIGHT);
+    }
+    $('#intro, #hurt').css({width: WIDTH, height: HEIGHT,});
+});
 
 function Explosion(position) {
     this.dirs = [];
