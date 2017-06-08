@@ -72,22 +72,45 @@ function initWorld() {
     });
 
     textureLoader.load('textures/wall.png', function(texture) {
-        const wallGeometry = new THREE.BoxGeometry(UNITSIZE, UNITSIZE, UNITSIZE);
+        const wallGeometry = new THREE.BoxGeometry(UNITSIZE, UNITSIZE/2, UNITSIZE);
         texture.magFilter = THREE.NearestFilter;
         texture.minFilter = THREE.LinearMipMapLinearFilter;
         const wallMaterial = new THREE.MeshLambertMaterial({map: texture});
-        for(var i = 0; i < mapW; i++) {
-            for(var j = 0; j < map[i].length; j++) {
-                if(map[i][j]) {
+        for (var i = 0; i < mapW; i++) {
+            for (var j = 0; j < map[i].length; j++) {
+                if (map[i][j]) {
                     const wallBlock = new THREE.Mesh(wallGeometry, wallMaterial);
                     wallBlock.position.x = i * UNITSIZE;
-                    wallBlock.position.y = UNITSIZE / 2;
+                    wallBlock.position.y = UNITSIZE / 4;
                     wallBlock.position.z = j * UNITSIZE;
                     scene.add(wallBlock);
                 }
             }
         }
     });
+
+    //initialize background
+    var skyTexture = new THREE.ImageUtils.loadTexture( 'textures/sky.png' );
+    skyTexture.wrapS = THREE.RepeatWrapping;
+    skyTexture.repeat.set( 1, 1 );
+    var backgroundMaterial = new THREE.MeshBasicMaterial( { map: skyTexture, side: THREE.DoubleSide } );
+    var backgroundGeometry = new THREE.PlaneGeometry(20000, 20000, 10, 10);
+    var background1 = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+    background1.position.z = -3000;
+    scene.add(background1);
+    var background2 = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+    background2.rotation.y = Math.PI / 2;
+    background1.position.x = 2000;
+    scene.add(background2);
+    var background3 = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+    background3.position.z = 4000;
+    scene.add(background3);
+    var background4 = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+    background4.position.x = 5000;
+    background4.rotation.y = 2.5 * Math.PI;
+    scene.add(background4);
+
+
 
     // initialize lighting
     const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
