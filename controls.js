@@ -7,7 +7,7 @@ KeyboardControls = function(camera, checkCollision) {
 
     this.domElement = document;
 
-    this.movementSpeed = 100.0;
+    this.movementSpeed = 500.0;
     this.rotateSpeed= 0.005;
 
     this.moveForward = false;

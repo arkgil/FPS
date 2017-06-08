@@ -60,20 +60,15 @@ function initWorld() {
     const textureLoader = new THREE.TextureLoader();
 
     // initialize floor
-    var floorMaterial;
-    textureLoader.load('textures/floor.png', function(t) {
-        // figure out how to load a texture
-        var texture = THREE.ImageUtils.loadTexture( 'textures/floor.png' );
-        texture.magFilter = THREE.NearestFilter;
-        texture.minFilter = THREE.LinearMipMapLinearFilter;
-        const floor = new THREE.Mesh(
-            new THREE.BoxGeometry(mapW * UNITSIZE, 10, mapH * UNITSIZE),
-            new THREE.MeshLambertMaterial({map: texture})//map: t})
-        )
-        floor.position.x = (mapW * UNITSIZE / 2);
-        floor.position.z = (mapH * UNITSIZE / 2);
-        scene.add(floor);
-    });
+    var floorTexture = new THREE.ImageUtils.loadTexture( 'textures/floor.png' );
+    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+    floorTexture.repeat.set( 50, 50 );
+    var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+    var floorGeometry = new THREE.PlaneGeometry(10000, 10000, 10, 10);
+    var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.position.y = -0.5;
+    floor.rotation.x = Math.PI / 2;
+    scene.add(floor);
 
     // initialize walls
     const wallGeometry = new THREE.BoxGeometry(UNITSIZE, UNITSIZE, UNITSIZE);
