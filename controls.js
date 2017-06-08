@@ -1,7 +1,9 @@
-KeyboardControls = function(camera) {
+KeyboardControls = function(camera, checkCollision) {
     this.camera = camera;
     this.target = new THREE.Vector3(1, this.camera.position.y, 1);
     this.target.normalize()
+
+    this.checkCollision = checkCollision;
 
     this.domElement = document;
 
@@ -65,12 +67,16 @@ KeyboardControls = function(camera) {
             const direction = this.target.clone();
             const distance = timeDelta * this.movementSpeed;
             direction.multiplyScalar(timeDelta * this.movementSpeed);
-            if(this.moveForward) {
-                this.camera.position.add(direction);
+            const newPosition = new THREE.Vector3();
+            newPosition.copy(this.camera.position);
+            if (this.moveForward) {
+                newPosition.add(direction);
             }
-            else {
-                this.camera.position.sub(direction);
+            if (this.moveBackward) {
+                newPosition.sub(direction);
             }
+            console.log(newPosition);
+            if(!this.checkCollision(newPosition)) this.camera.position.copy(newPosition);
         }
     }
 

@@ -39,13 +39,11 @@ function initGame() {
 
     // field of view, aspect, near plane, far plane
     camera = new THREE.PerspectiveCamera(75, WIDTH / HEIGHT, 0.1, 10000);
-    camera.position.y = UNITSIZE * 0.2;
-    camera.position.x = 2 * UNITSIZE;
-    camera.position.z = 2 * UNITSIZE;
+    camera.position.set(2 * UNITSIZE, UNITSIZE * 0.2, 2 * UNITSIZE);
     scene.add(camera);
 
     // intialize camera controls
-    controls = new KeyboardControls(camera);
+    controls = new KeyboardControls(camera, checkCollision);
 
     // initialize world objects
     initWorld();
@@ -110,4 +108,19 @@ function render() {
     const timeDelta = clock.getDelta();
     controls.update(timeDelta);
     renderer.render(scene, camera);
+}
+
+function checkCollision(position) {
+    const coords = getMapSector(position);
+    return map[coords.x][coords.z] != 0;
+}
+
+function getMapSector(position) {
+    var x = Math.ceil((position.x - UNITSIZE / 2) / UNITSIZE);
+    var z = Math.ceil((position.z - UNITSIZE / 2) / UNITSIZE);
+    if (x < 0) x = 0;
+    if (x >= mapW - 1) x = mapW - 1;
+    if (z < 0) z = 0;
+    if (z >= mapH - 1) z = mapH - 1;
+    return {x: x, z: z};
 }
