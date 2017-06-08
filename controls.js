@@ -16,38 +16,38 @@ KeyboardControls = function(camera, checkCollision) {
     this.rotateRight = false;
 
     this.onKeyDown = function (event) {
-		switch(event.keyCode) {
+        switch(event.keyCode) {
 
-			case 38: /*up*/
-			case 87: /*W*/ this.moveForward = true; break;
+            case 38: /*up*/
+            case 87: /*W*/ this.moveForward = true; break;
 
-			case 37: /*left*/
-			case 65: /*A*/ this.rotateLeft = true; break;
+            case 37: /*left*/
+            case 65: /*A*/ this.rotateLeft = true; break;
 
-			case 40: /*down*/
-			case 83: /*S*/ this.moveBackward = true; break;
+            case 40: /*down*/
+            case 83: /*S*/ this.moveBackward = true; break;
 
-			case 39: /*right*/
-			case 68: /*D*/ this.rotateRight = true; break;
-		}
+            case 39: /*right*/
+            case 68: /*D*/ this.rotateRight = true; break;
+        }
 
-	};
+    };
 
     this.onKeyUp = function (event) {
-		switch(event.keyCode) {
-			case 38: /*up*/
-			case 87: /*W*/ this.moveForward = false; break;
+        switch(event.keyCode) {
+            case 38: /*up*/
+            case 87: /*W*/ this.moveForward = false; break;
 
-			case 37: /*left*/
-			case 65: /*A*/ this.rotateLeft = false; break;
+            case 37: /*left*/
+            case 65: /*A*/ this.rotateLeft = false; break;
 
-			case 40: /*down*/
-			case 83: /*S*/ this.moveBackward = false; break;
+            case 40: /*down*/
+            case 83: /*S*/ this.moveBackward = false; break;
 
-			case 39: /*right*/
-			case 68: /*D*/ this.rotateRight = false; break;
-		}
-	};
+            case 39: /*right*/
+            case 68: /*D*/ this.rotateRight = false; break;
+        }
+    };
 
     this.update = function (timeDelta) {
         if (this.rotateLeft || this.rotateRight) {
@@ -81,11 +81,11 @@ KeyboardControls = function(camera, checkCollision) {
     }
 
     this.domElement.addEventListener('keydown', bind( this, this.onKeyDown ), false );
-	this.domElement.addEventListener('keyup', bind( this, this.onKeyUp ), false );
+    this.domElement.addEventListener('keyup', bind( this, this.onKeyUp ), false );
 
     function bind(scope, fn) {
-		return function () {
-			fn.apply(scope, arguments);
-		};
-	};
+        return function () {
+            fn.apply(scope, arguments);
+        };
+    };
 }
