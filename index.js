@@ -18,12 +18,14 @@ const mapW = map.length,
 
 // width and height of a window
 const WIDTH = window.innerWidth,
-    HEIGHT = window.innerHeight,
-    UNITSIZE = 250, // size of a player, AI and wall cubes
-    AINUM = 5;
+      HEIGHT = window.innerHeight,
+      UNITSIZE = 250, // size of a player, AI and wall cubes
+      AINUM = 5,
+      BULLET_SPEED = 1000.0,
+      SHOOT_MIN_INTERVAL = 500; // minimum time interval between two shots, in milliseconds
 
 // global Three.js-related variables
-var scene, camera, renderer, controls, clock;
+var scene, camera, renderer, controls, clock, bullets = [], lastShot;
 
 onDocumentReady(function() {
     initGame();
@@ -53,6 +55,9 @@ function initGame() {
     // set up renderer
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(WIDTH, HEIGHT);
+
+    lastShot = new Date().getTime();
+    document.addEventListener('keydown', shoot);
 
     // add renderer to DOM
     document.body.appendChild(renderer.domElement);
@@ -134,6 +139,20 @@ function animate() {
 function render() {
     const timeDelta = clock.getDelta();
     controls.update(timeDelta);
+
+    for (var i = bullets.length - 1; i >= 0; i--) {
+        const bullet = bullets[i];
+        const direction = new THREE.Vector3();
+        direction.copy(bullet.ray.direction);
+        const distance = BULLET_SPEED * timeDelta;
+        direction.multiplyScalar(distance);
+        bullet.position.add(direction);
+        if (checkCollision(bullet.position)) {
+            bullets.splice(i, 1);
+            scene.remove(bullet);
+        }
+    }
+
     renderer.render(scene, camera);
 }
 
@@ -162,21 +181,25 @@ function spawnBullet(source) {
         new THREE.SphereGeometry(10),
         new THREE.MeshLambertMaterial({color: 0x473737})
     );
-    bullet.position.set(source.x, source.y * 0.8, source.z);
+    bullet.position.set(source.position.x, source.position.y * 0.8, source.position.z);
 
     const direction = new THREE.Vector3();
     if (source instanceof THREE.Camera) {
         // fire in the same direction as the camera
-        controls.target.copy(direction);
-        direction.y = bullet.position.y;
+        direction.copy(controls.target);
+        direction.y = 0;
     }
+    direction.normalize();
 
     // ray originating in bullet's initial position, with computed direction
-    bullet.ray = THREE.Ray(
-        source.position,
+    bullet.ray = new THREE.Ray(
+        bullet.position,
         direction
     );
     bullet.owner = source;
+
+    // track all bullets on the scene
+    bullets.push(bullet);
 
     scene.add(bullet);
 }
@@ -212,4 +235,14 @@ function addAI() {
 
 function getRandBetween(lo, hi) {
     return parseInt(Math.floor(Math.random()*(hi-lo+1))+lo, 10);
+}
+
+function shoot(e) {
+    if (e.keyCode == 32) {
+        const now = new Date().getTime();
+        if (now - lastShot >= SHOOT_MIN_INTERVAL) {
+            spawnBullet();
+            lastShot = now;
+        }
+    }
 }
