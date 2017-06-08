@@ -59,34 +59,35 @@ function initGame() {
 function initWorld() {
     const textureLoader = new THREE.TextureLoader();
 
-    // initialize floor
-    var floorTexture = new THREE.ImageUtils.loadTexture( 'textures/floor.png' );
-    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
-    floorTexture.repeat.set( 50, 50 );
-    var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
-    var floorGeometry = new THREE.PlaneGeometry(10000, 10000, 10, 10);
-    var floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.position.y = -0.5;
-    floor.rotation.x = Math.PI / 2;
-    scene.add(floor);
+    textureLoader.load('textures/floor.png', function(floorTexture) {
+        // initialize floor
+        floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set( 50, 50 );
+        const floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+        const floorGeometry = new THREE.PlaneGeometry(10000, 10000, 10, 10);
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.position.y = -0.5;
+        floor.rotation.x = Math.PI / 2;
+        scene.add(floor);
+    });
 
-    // initialize walls
-    const wallGeometry = new THREE.BoxGeometry(UNITSIZE, UNITSIZE, UNITSIZE);
-    var texture = THREE.ImageUtils.loadTexture( 'textures/wall.png' );
-    texture.magFilter = THREE.NearestFilter;
-    texture.minFilter = THREE.LinearMipMapLinearFilter;
-    const wallMaterial = new THREE.MeshLambertMaterial({map: texture});
-    for(var i = 0; i < mapW; i++) {
-        for(var j = 0; j < map[i].length; j++) {
-            if(map[i][j]) {
-                const wallBlock = new THREE.Mesh(wallGeometry, wallMaterial);
-                wallBlock.position.x = i * UNITSIZE;
-                wallBlock.position.y = UNITSIZE / 2;
-                wallBlock.position.z = j * UNITSIZE;
-                scene.add(wallBlock);
+    textureLoader.load('textures/wall.png', function(texture) {
+        const wallGeometry = new THREE.BoxGeometry(UNITSIZE, UNITSIZE, UNITSIZE);
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.LinearMipMapLinearFilter;
+        const wallMaterial = new THREE.MeshLambertMaterial({map: texture});
+        for(var i = 0; i < mapW; i++) {
+            for(var j = 0; j < map[i].length; j++) {
+                if(map[i][j]) {
+                    const wallBlock = new THREE.Mesh(wallGeometry, wallMaterial);
+                    wallBlock.position.x = i * UNITSIZE;
+                    wallBlock.position.y = UNITSIZE / 2;
+                    wallBlock.position.z = j * UNITSIZE;
+                    scene.add(wallBlock);
+                }
             }
         }
-    }
+    });
 
     // initialize lighting
     const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -124,4 +125,33 @@ function getMapSector(position) {
     if (z < 0) z = 0;
     if (z >= mapH - 1) z = mapH - 1;
     return {x: x, z: z};
+}
+
+function spawnBullet(source) {
+    // source of the bullet
+    if (source === undefined) {
+        source = camera;
+    }
+
+    const bullet = new THREE.Mesh(
+        new THREE.SphereGeometry(10),
+        new THREE.MeshLambertMaterial({color: 0x473737})
+    );
+    bullet.position.set(source.x, source.y * 0.8, source.z);
+
+    const direction = new THREE.Vector3();
+    if (source instanceof THREE.Camera) {
+        // fire in the same direction as the camera
+        controls.target.copy(direction);
+        direction.y = bullet.position.y;
+    }
+
+    // ray originating in bullet's initial position, with computed direction
+    bullet.ray = THREE.Ray(
+        source.position,
+        direction
+    );
+    bullet.owner = source;
+
+    scene.add(bullet);
 }
