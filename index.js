@@ -1,25 +1,25 @@
 // the game map
 const map = [ // 1  2  3  4  5  6  7  8  9
-           [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,], // 0
-           [1, 1, 0, 0, 0, 0, 0, 1, 1, 1,], // 1
-           [1, 1, 0, 0, 2, 0, 0, 0, 0, 1,], // 2
-           [1, 0, 0, 0, 0, 2, 0, 0, 0, 1,], // 3
-           [1, 0, 0, 2, 0, 0, 2, 0, 0, 1,], // 4
-           [1, 0, 0, 0, 2, 0, 0, 0, 1, 1,], // 5
-           [1, 1, 1, 0, 0, 0, 0, 1, 1, 1,], // 6
-           [1, 1, 1, 0, 0, 1, 0, 0, 1, 1,], // 7
-           [1, 1, 1, 1, 1, 1, 0, 0, 1, 1,], // 8
-           [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,], // 9
-           ];
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,], // 0
+    [1, 1, 0, 0, 0, 0, 0, 1, 1, 1,], // 1
+    [1, 1, 0, 0, 2, 0, 0, 0, 0, 1,], // 2
+    [1, 0, 0, 0, 0, 2, 0, 0, 0, 1,], // 3
+    [1, 0, 0, 2, 0, 0, 2, 0, 0, 1,], // 4
+    [1, 0, 0, 0, 2, 0, 0, 0, 1, 1,], // 5
+    [1, 1, 1, 0, 0, 0, 0, 1, 1, 1,], // 6
+    [1, 1, 1, 0, 0, 1, 0, 0, 1, 1,], // 7
+    [1, 1, 1, 1, 1, 1, 0, 0, 1, 1,], // 8
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,], // 9
+];
 
 // map width and height
 const mapW = map.length,
-      mapH = map[0].length;
+    mapH = map[0].length;
 
 // width and height of a window
 const WIDTH = window.innerWidth,
-      HEIGHT = window.innerHeight,
-      UNITSIZE = 250; // size of a player, AI and wall cubes
+    HEIGHT = window.innerHeight,
+    UNITSIZE = 250; // size of a player, AI and wall cubes
 
 // global Three.js-related variables
 var scene, camera, renderer, controls, clock;
@@ -39,11 +39,13 @@ function initGame() {
 
     // field of view, aspect, near plane, far plane
     camera = new THREE.PerspectiveCamera(75, WIDTH / HEIGHT, 0.1, 10000);
-    camera.position.set(2 * UNITSIZE, UNITSIZE * 0.2, 2 * UNITSIZE);
+    camera.position.y = UNITSIZE * 0.2;
+    camera.position.x = 2 * UNITSIZE;
+    camera.position.z = 2 * UNITSIZE;
     scene.add(camera);
 
     // intialize camera controls
-    controls = new KeyboardControls(camera, checkCollision);
+    controls = new KeyboardControls(camera);
 
     // initialize world objects
     initWorld();
@@ -63,9 +65,12 @@ function initWorld() {
     var floorMaterial;
     textureLoader.load('textures/floor.png', function(t) {
         // figure out how to load a texture
+        var texture = THREE.ImageUtils.loadTexture( 'textures/floor.png' );
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.LinearMipMapLinearFilter;
         const floor = new THREE.Mesh(
             new THREE.BoxGeometry(mapW * UNITSIZE, 10, mapH * UNITSIZE),
-            new THREE.MeshLambertMaterial({color: 0xEDCBA0})//map: t})
+            new THREE.MeshLambertMaterial({map: texture})//map: t})
         )
         floor.position.x = (mapW * UNITSIZE / 2);
         floor.position.z = (mapH * UNITSIZE / 2);
@@ -74,7 +79,10 @@ function initWorld() {
 
     // initialize walls
     const wallGeometry = new THREE.BoxGeometry(UNITSIZE, UNITSIZE, UNITSIZE);
-    const wallMaterial = new THREE.MeshLambertMaterial({color: 0xFBEBCD});
+    var texture = THREE.ImageUtils.loadTexture( 'textures/wall.png' );
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.LinearMipMapLinearFilter;
+    const wallMaterial = new THREE.MeshLambertMaterial({map: texture});
     for(var i = 0; i < mapW; i++) {
         for(var j = 0; j < map[i].length; j++) {
             if(map[i][j]) {
@@ -89,11 +97,11 @@ function initWorld() {
 
     // initialize lighting
     const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
-	light1.position.set(0.5, 1, 0.5);
-	scene.add(light1);
+    light1.position.set(0.5, 1, 0.5);
+    scene.add(light1);
     const light2 = new THREE.DirectionalLight(0xffffff, 0.7);
-	light2.position.set(-0.5, -1, -0.5);
-	scene.add(light2);
+    light2.position.set(-0.5, -1, -0.5);
+    scene.add(light2);
 
     console.log('Initialized world');
 }
@@ -108,19 +116,4 @@ function render() {
     const timeDelta = clock.getDelta();
     controls.update(timeDelta);
     renderer.render(scene, camera);
-}
-
-function checkCollision(position) {
-    const coords = getMapSector(position);
-    return map[coords.x][coords.z] != 0;
-}
-
-function getMapSector(position) {
-    var x = Math.ceil((position.x - UNITSIZE / 2) / UNITSIZE);
-    var z = Math.ceil((position.z - UNITSIZE / 2) / UNITSIZE);
-    if (x < 0) x = 0;
-    if (x >= mapW - 1) x = mapW - 1;
-    if (z < 0) z = 0;
-    if (z >= mapH - 1) z = mapH - 1;
-    return {x: x, z: z};
 }
