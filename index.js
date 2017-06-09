@@ -21,10 +21,12 @@ WIDTH = window.innerWidth,
       HEIGHT = window.innerHeight;
 const UNITSIZE = 250, // size of a player, AI and wall cubes
       AINUM = 5,
+      AI_RADIUS = 40;
       BULLET_SPEED = 1000.0,
+      BULLET_RADIUS = 10;
       SHOOT_MIN_INTERVAL = 500, // minimum time interval between two shots, in milliseconds
       EXPLOSION_TIME = 100, // explosion time in milliseconds
-      AISPEED = 2;
+      AISPEED = 5;
 
 // global Three.js-related variables
 var scene, camera, renderer, controls, clock, bullets = [], lastShot, explosions = [];
@@ -132,7 +134,6 @@ function initWorld() {
     console.log('Initialized world');
 }
 function animate() {
-    moveAI();
     requestAnimationFrame(animate);
 
     render();
@@ -143,19 +144,32 @@ function render() {
     const timeDelta = clock.getDelta();
     controls.update(timeDelta);
 
+    // check bullet collisions with mobs
+    for (var i = bullets.length - 1; i >= 0; i--) {
+        const bullet = bullets[i];
+        const intersects = bullet.raycaster.intersectObjects(ai);
+        for(var j = 0; j <= intersects.length - 1; j++) {
+            const intersect = intersects[j].object;
+            if (bullet.position.distanceTo(intersect.position) <= AI_RADIUS + BULLET_RADIUS) {
+                removeBullet(bullet, i);
+                scene.remove(intersect);
+                const aiIndex = ai.findIndex(a => a.uuid === intersect.uuid);
+                ai.splice(aiIndex, 1);
+                addAI();
+            }
+        }
+    }
+
+    // check bullet collisions with walls
     for (var i = bullets.length - 1; i >= 0; i--) {
         const bullet = bullets[i];
         const direction = new THREE.Vector3();
-        direction.copy(bullet.ray.direction);
+        direction.copy(bullet.raycaster.ray.direction);
         const distance = BULLET_SPEED * timeDelta;
         direction.multiplyScalar(distance);
         bullet.position.add(direction);
         if (checkCollision(bullet.position)) {
-            bullets.splice(i, 1);
-            scene.remove(bullet);
-            const explosion = new Explosion(bullet.position);
-            explosions.push(explosion);
-            scene.add(explosion.particles);
+            removeBullet(bullet, i);
         }
     }
 
@@ -172,6 +186,8 @@ function render() {
             explosions[i].update();
         }
     }
+
+    moveAI();
 
     renderer.render(scene, camera);
 }
@@ -191,32 +207,22 @@ function getMapSector(position) {
     return {x: x, z: z};
 }
 
-function spawnBullet(source) {
-    // source of the bullet
-    if (source === undefined) {
-        source = camera;
-    }
-
+function spawnBullet() {
     const bullet = new THREE.Mesh(
-        new THREE.SphereGeometry(10),
+        new THREE.SphereGeometry(BULLET_RADIUS),
         new THREE.MeshLambertMaterial({color: 0x473737})
     );
-    bullet.position.set(source.position.x, source.position.y * 0.8, source.position.z);
+    bullet.position.set(camera.position.x, camera.position.y * 0.8, camera.position.z);
 
     const direction = new THREE.Vector3();
-    if (source instanceof THREE.Camera) {
-        // fire in the same direction as the camera
-        direction.copy(controls.target);
-        direction.y = 0;
-    }
+    direction.copy(controls.target);
+    direction.y = 0;
     direction.normalize();
 
     // ray originating in bullet's initial position, with computed direction
-    bullet.ray = new THREE.Ray(
-        bullet.position,
-        direction
-    );
-    bullet.owner = source;
+    const raycaster = new THREE.Raycaster();
+    raycaster.set(bullet.position, direction);
+    bullet.raycaster = raycaster;
 
     // track all bullets on the scene
     bullets.push(bullet);
@@ -225,12 +231,9 @@ function spawnBullet(source) {
 }
 
 var ai = [];
-var aiDirx = [];
-var aiDirz = [];
-var aiGeo = new THREE.SphereGeometry(40, 40, 40);
+var aiGeo = new THREE.SphereGeometry(AI_RADIUS, 40, 40);
 function setupAI() {
     for (var i = 0; i < AINUM; i++) {
-        aiDirx[i] = aiDirz[i] = AISPEED;
         addAI();
     }
 }
@@ -239,6 +242,8 @@ function addAI() {
     var c = getMapSector(camera.position);
     var aiMaterial = new THREE.MeshBasicMaterial({map: THREE.ImageUtils.loadTexture('textures/eye.png')});
     var o = new THREE.Mesh(aiGeo, aiMaterial);
+    o.dirX = AISPEED;
+    o.dirZ = AISPEED;
     do {
         var x = getRandBetween(0, mapW-1);
         var z = getRandBetween(0, mapH-1);
@@ -246,24 +251,20 @@ function addAI() {
     x = Math.floor(x)  * UNITSIZE;
     z = Math.floor(z)  * UNITSIZE;
     o.position.set(x, UNITSIZE * 0.15, z);
-    o.health = 100;
-    o.pathPos = 1;
-    o.lastRandomX = Math.random();
-    o.lastRandomZ = Math.random();
-    o.lastShot = Date.now(); // Higher-fidelity timers aren't a big deal here.
     ai.push(o);
     scene.add(o);
 }
 
 function moveAI() {
-    for (i = 0; i < AINUM; i++) {
-        var direction = new THREE.Vector3(aiDirx[i], 0, aiDirz[i]);
-        ai[i].position.add(direction);
+    for (i = 0; i < ai.length - 1; i++) {
+        const o = ai[i];
+        const direction = new THREE.Vector3(o.dirX, 0, o.dirZ);
+        o.position.add(direction);
         var delta = 1 + getRandBetween(0, 0.2);
-        if(checkCollision(ai[i].position))
+        if(checkCollision(o.position))
         {
-            aiDirx[i] = -aiDirx[i];
-            aiDirz[i] = -aiDirz[i];
+            o.dirX = -o.dirX;
+            o.dirZ = -o.dirZ;
         }
     }
 }
@@ -337,4 +338,12 @@ function Explosion(position) {
     this.clearParticles = function() {
         this.particles.geometry.dispose();
     }
+}
+
+function removeBullet(bullet, i) {
+    bullets.splice(i, 1);
+    scene.remove(bullet);
+    const explosion = new Explosion(bullet.position);
+    explosions.push(explosion);
+    scene.add(explosion.particles);
 }
