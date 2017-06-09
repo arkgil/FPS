@@ -242,8 +242,9 @@ function addAI() {
     var c = getMapSector(camera.position);
     var aiMaterial = new THREE.MeshBasicMaterial({map: THREE.ImageUtils.loadTexture('textures/eye.png')});
     var o = new THREE.Mesh(aiGeo, aiMaterial);
-    o.dirX = AISPEED;
-    o.dirZ = AISPEED;
+    o.direction = new THREE.Vector3(AISPEED, 0, AISPEED);
+    const rotation = new THREE.Euler(0, Math.random() * Math.PI * 2, 0);
+    o.direction.applyEuler(rotation);
     do {
         var x = getRandBetween(0, mapW-1);
         var z = getRandBetween(0, mapH-1);
@@ -258,13 +259,11 @@ function addAI() {
 function moveAI() {
     for (i = 0; i < ai.length - 1; i++) {
         const o = ai[i];
-        const direction = new THREE.Vector3(o.dirX, 0, o.dirZ);
-        o.position.add(direction);
+        o.position.add(o.direction);
         var delta = 1 + getRandBetween(0, 0.2);
         if(checkCollision(o.position))
         {
-            o.dirX = -o.dirX;
-            o.dirZ = -o.dirZ;
+            o.direction.negate();
         }
     }
 }
@@ -282,21 +281,6 @@ function shoot(e) {
         }
     }
 }
-
-// Handle window resizing
-$(window).resize(function() {
-    WIDTH = window.innerWidth;
-    HEIGHT = window.innerHeight;
-    ASPECT = WIDTH / HEIGHT;
-    if (camera) {
-        camera.aspect = ASPECT;
-        camera.updateProjectionMatrix();
-    }
-    if (renderer) {
-        renderer.setSize(WIDTH, HEIGHT);
-    }
-    $('#intro, #hurt').css({width: WIDTH, height: HEIGHT,});
-});
 
 function Explosion(position) {
     this.dirs = [];
